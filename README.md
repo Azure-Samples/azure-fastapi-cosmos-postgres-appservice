@@ -1,8 +1,6 @@
+# Deploy FastAPI Application with PostgreSQL via Azure Container Apps
 
-# Deploy a FastAPI Application via Azure Container Apps
-
-This project deploy a [FastAPI](https://fastapi.tiangolo.com) application to [Azure Container Apps](https://aka.ms/aca). The FastAPI application is a simple web application for a space travel agency. The application is built using the FastAPI framework and uses a PostgreSQL database with SQLModel as an ORM. The application can be deployed to Azure using the [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/overview).
-
+This project deploys a web application for a space travel agency using FastAPI. The application can be deployed to Azure with Azure App Service using the [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/overview).
 
 ## Opening the project
 
@@ -15,14 +13,14 @@ If you're not using one of those options for opening the project, then you'll ne
 1. Install production requirements:
 
     ```sh
-    python -m pip install -r src/requirements.txt
+    python3 -m pip install -r src/requirements.txt
     ```
 
 
 1. Install the app as an editable package:
 
     ```sh
-    python -m pip install -e src
+    python3 -m pip install -e src
     ```
 
 
@@ -30,8 +28,7 @@ If you're not using one of those options for opening the project, then you'll ne
 
     ```sh
     python3 src/fastapi_app/seed_data.py
-
-```
+    ```
 
 ## Running locally
 
@@ -58,7 +55,7 @@ python3 -m gunicorn fastapi_app:app -c src/gunicorn.conf.py
 
 ## Deployment
 
-This repo is set up for deployment on [Azure Container Apps](https://learn.microsoft.com/azure/container-apps/overview) using the `Dockerfile` and the configuration files in the `infra` folder.
+This repo is set up for deployment on Azure via Azure App Service.
 
 Steps for deployment:
 
@@ -95,3 +92,4 @@ to be stored as Github action secrets. To set that up, run:
 ```shell
 azd pipeline config
 ```
+
