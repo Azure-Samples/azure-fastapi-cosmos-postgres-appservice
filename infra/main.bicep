@@ -17,6 +17,7 @@ param dbserverPassword string
 param principalId string = ''
 
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
+var prefix = '${name}-${resourceToken}'
 var tags = { 'azd-env-name': name }
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -24,11 +25,6 @@ resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
   location: location
   tags: tags
 }
-
-var prefix = '${name}-${resourceToken}'
-// value is read-only in cosmos
-var dbserverUser = 'citus'
-var dbserverDatabaseName = 'relecloud'
 
 // Store secrets in a keyvault
 module keyVault './core/security/keyvault.bicep' = {
@@ -42,28 +38,20 @@ module keyVault './core/security/keyvault.bicep' = {
   }
 }
 
-module dbserver 'core/database/cosmos/cosmos-pg-adapter.bicep' = {
-  name: 'dbserver'
+module db 'db.bicep' = {
+  name: 'db'
   scope: resourceGroup
   params: {
-    name: '${prefix}-postgresql'
+    name: 'dbserver'
     location: location
     tags: tags
-    postgresqlVersion: '15'
-    administratorLogin: dbserverUser
-    administratorLoginPassword: dbserverPassword
-    databaseName: dbserverDatabaseName
-    allowAzureIPsFirewall: true
-    coordinatorServerEdition: 'BurstableMemoryOptimized'
-    coordinatorStorageQuotainMb: 131072
-    coordinatorVCores: 1
-    nodeCount: 0
-    nodeVCores: 4
+    prefix: prefix
+    dbserverDatabaseName: 'relecloud'
+    dbserverPassword: dbserverPassword
   }
 }
 
 // Monitor application with Azure Monitor
-
 module monitoring 'core/monitor/monitoring.bicep' = {
   name: 'monitoring'
   scope: resourceGroup
@@ -76,52 +64,21 @@ module monitoring 'core/monitor/monitoring.bicep' = {
   }
 }
 
-module web 'core/host/appservice.bicep' = {
-  name: 'appservice'
+// Web frontend
+module web 'web.bicep' = {
+  name: 'web'
   scope: resourceGroup
   params: {
-    name: '${prefix}-web'
-    location: location
-    tags: union(tags, { 'azd-service-name': 'web' })
-    appServicePlanId: appServicePlan.outputs.id
-    runtimeName: 'python'
-    runtimeVersion: '3.11'
-    scmDoBuildDuringDeployment: true
-    ftpsState: 'Disabled'
-    appCommandLine: 'entrypoint.sh'
-    managedIdentity: true
-    appSettings: {
-      APPLICATIONINSIGHTS_CONNECTION_STRING: monitoring.outputs.applicationInsightsConnectionString
-      RUNNING_IN_PRODUCTION: 'true'
-      DBSERVER_HOST: dbserver.outputs.DOMAIN_NAME
-      DBSERVER_USER: dbserverUser
-      DBSERVER_DB: dbserverDatabaseName
-      DBSERVER_PASSWORD: '@Microsoft.KeyVault(VaultName=${keyVault.outputs.name};SecretName=DBSERVERPASSWORD)'
-    }
-  }
-}
-
-module appServicePlan 'core/host/appserviceplan.bicep' = {
-  name: 'serviceplan'
-  scope: resourceGroup
-  params: {
-    name: '${prefix}-serviceplan'
+    name: replace('${take(prefix, 19)}-appsvc', '--', '-')
     location: location
     tags: tags
-    sku: {
-      name: 'B1'
-    }
-    reserved: true
-  }
-}
-
-// Give the app access to KeyVault
-module webKeyVaultAccess './core/security/keyvault-access.bicep' = {
-  name: 'web-keyvault-access'
-  scope: resourceGroup
-  params: {
+    applicationInsightsName: monitoring.outputs.applicationInsightsName
     keyVaultName: keyVault.outputs.name
-    principalId: web.outputs.identityPrincipalId
+    appCommandLine: 'entrypoint.sh'
+    pythonVersion: '3.11'
+    dbserverDomainName: db.outputs.dbserverDomainName
+    dbserverUser: db.outputs.dbserverUser
+    dbserverDatabaseName: db.outputs.dbserverDatabaseName
   }
 }
 
@@ -144,9 +101,6 @@ module keyVaultSecrets './core/security/keyvault-secret.bicep' = [for secret in 
 }]
 
 output AZURE_LOCATION string = location
-output DBSERVER_DATABASE_NAME string = dbserverDatabaseName
-output DBSERVER_DOMAIN_NAME string = dbserver.outputs.DOMAIN_NAME
-output DBSERVER_USER string = dbserverUser
 output AZURE_KEY_VAULT_ENDPOINT string = keyVault.outputs.endpoint
 output AZURE_KEY_VAULT_NAME string = keyVault.outputs.name
 output APPLICATIONINSIGHTS_NAME string = monitoring.outputs.applicationInsightsName
