@@ -1,3 +1,23 @@
+---
+page_type: sample
+languages:
+- azdeveloper
+- python
+- bicep
+- html
+- css
+- scss
+products:
+- azure
+- azure-app-service
+- azure-postgresql
+- azure-cosmos-db
+urlFragment: azure-fastapi-cosmos-postgres-appservice
+name: Deploy FastAPI Application with PostgreSQL on Azure App Service (Python)
+description: This project deploys a web application for a space travel agency using FastAPI with Python, and is set up for easy deployment with the Azure Developer CLI.
+---
+<!-- YAML front-matter schema: https://review.learn.microsoft.com/en-us/help/contribute/samples/process/onboarding?branch=main#supported-metadata-fields-for-readmemd -->
+
 # Deploy FastAPI Application with PostgreSQL via Azure Container Apps
 
 This project deploys a web application for a space travel agency using FastAPI. The application can be deployed to Azure with Azure App Service using the [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/overview).
